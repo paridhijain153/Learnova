@@ -105,7 +105,7 @@ export default function Contact() {
     {
       icon: Mail,
       label: "Email",
-      value: "shawprem217@gmail.com",
+      value: "hello@learnova.com",
       href: "mailto:hello@learnova.com",
       gradient: "from-blue-500 to-cyan-500",
     },
