@@ -230,6 +230,21 @@ export default function AuthForm({
             {errors.password && (
               <p className="text-red-400 text-sm mt-1">{errors.password}</p>
             )}
+            {!isLogin && password && (
+              <div className="mt-3 space-y-2">
+                <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${passwordStrength.barClass} ${passwordStrength.widthClass} transition-all duration-500`}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-400">Password Strength:</span>
+                  <span className={`font-semibold ${passwordStrength.textClass}`}>
+                    {passwordStrength.label}
+                  </span>
+                </div>
+              </div>
+            )}
             {!isLogin && !errors.password && (
               <p className="text-gray-400 text-xs mt-1">
                 Min 8 characters with upper, lower, number, and special character.
