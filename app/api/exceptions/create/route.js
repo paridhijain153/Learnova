@@ -57,7 +57,6 @@ export async function POST(request) {
       201,
     );
   } catch (error) {
-    console.error("Exception creation error:", error);
     return jsonError("Internal server error", 500);
   }
 }

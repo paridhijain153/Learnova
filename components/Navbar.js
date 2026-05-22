@@ -22,6 +22,7 @@ import {
   UserCheck,
   Sun,
   Moon,
+  Keyboard,
 } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import Image from "next/image";
@@ -32,7 +33,7 @@ export function Navbar() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-
+ 
   const {
   notifications,
   removeNotification,
@@ -318,7 +319,7 @@ useEffect(() => {
             </Link>
 
             {/* Desktop Nav */}
-            <div className="hidden md:flex items-center space-x-2">
+            <div className="hidden sm:flex items-center space-x-2">
         
               {navigationItems.map((item) => {
                 const isActive =
@@ -340,21 +341,9 @@ useEffect(() => {
               })}
 
               { isAuthenticated ? (
-                <div className="flex items-center space-x-2 md:space-x-4 ml-2 md:ml-6">
-                 <button
-                  onClick={() =>
-                    addNotification({
-                      message: "Test notification works!",
-                      time: "Just now",
-                      read: false,
-                      type: "success",
-                    })
-                  }
-                  className="bg-blue-500 text-foreground px-3 py-1 rounded"
-                >
-                  Test Notification
-                </button>
-                  <Button asChild className="hidden md:block relative bg-gradient-to-r from-accent to-blue-500 hover:from-accent/90 hover:to-blue-600 text-foreground font-medium shadow-lg hover:shadow-2xl hover:shadow-accent/30 transition-all duration-300 hover:scale-105 group overflow-hidden">
+                <div className="flex items-center space-x-2 sm:space-x-4 ml-2 sm:ml-6">
+                
+                  <Button asChild className="hidden sm:block relative bg-gradient-to-r from-accent to-blue-500 hover:from-accent/90 hover:to-blue-600 text-white font-medium shadow-lg hover:shadow-2xl hover:shadow-accent/30 transition-all duration-300 hover:scale-105 group overflow-hidden">
                     <Link href="/attendance">
                       <span className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <span className="relative flex items-center">
@@ -492,8 +481,8 @@ useEffect(() => {
                         )}
                       </div>
 
-                      <div className="hidden md:block text-left">
-                        <p className="text-sm font-medium text-foreground">
+                      <div className="hidden sm:block text-left">
+                        <p className="text-sm font-medium">
                           {getUserDisplayName()}
                         </p>
 
@@ -546,8 +535,8 @@ useEffect(() => {
                   </div>
                 </div>
               ) : (
-                <div className="ml-2 md:ml-6">
-                  <Button asChild className="relative bg-gradient-to-r from-accent to-blue-500 hover:from-accent/90 hover:to-blue-600 text-foreground font-medium shadow-lg hover:shadow-2xl hover:shadow-accent/30 transition-all duration-300 hover:scale-105 group overflow-hidden">
+                <div className="ml-2 sm:ml-6">
+                  <Button asChild className="relative bg-gradient-to-r from-accent to-blue-500 hover:from-accent/90 hover:to-blue-600 text-white font-medium shadow-lg hover:shadow-2xl hover:shadow-accent/30 transition-all duration-300 hover:scale-105 group overflow-hidden">
                     <Link href="/auth">
                       <span className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <span className="relative flex items-center">
@@ -561,7 +550,7 @@ useEffect(() => {
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="md:hidden">
+            <div className="sm:hidden">
               <Button
                 variant="ghost"
                 size="sm"
@@ -735,8 +724,18 @@ useEffect(() => {
                   </Link>
                 </Button>
               )}
-              <div className="text-center">
-                <p className="text-foreground/40 text-xs">
+              <div className="text-center space-y-3">
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    window.dispatchEvent(new CustomEvent("learnova:open-shortcuts"));
+                  }}
+                  className="inline-flex items-center gap-1.5 text-foreground/60 hover:text-accent transition-colors text-xs font-medium cursor-pointer"
+                >
+                  <Keyboard className="h-4 w-4 text-accent" />
+                  <span>Keyboard Shortcuts</span>
+                </button>
+                <p className="text-foreground/40 text-[10px]">
                   © {new Date().getFullYear()} Learnova. All rights reserved.
                 </p>
               </div>
@@ -744,6 +743,7 @@ useEffect(() => {
           </div>
         </>
       )}
+
     </>
   );
 }

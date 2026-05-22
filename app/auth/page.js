@@ -24,7 +24,7 @@ import { validateForm, redirectBasedOnRole } from "@/utils/authUtils";
 import { USER_ROLES } from "@/constants/userRoles";
 
 export default function AuthPage() {
-  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [showRoleSelection, setShowRoleSelection] = useState(true);
   const [isLogin, setIsLogin] = useState(true);
   const [selectedRole, setSelectedRole] = useState("");
 
@@ -88,7 +88,7 @@ export default function AuthPage() {
 
     const { isValid, errors: validationErrors } = validateForm(
       formData,
-      isLogin
+      isLogin,
     );
 
     if (!isValid) {
@@ -106,8 +106,8 @@ export default function AuthPage() {
         result = await loginWithEmail(email, password, selectedRole);
       } else {
         result = await signupWithEmail(email, password, selectedRole, {
-            fullName,
-            instituteName,
+          fullName,
+          instituteName,
         });
       }
 
@@ -120,15 +120,18 @@ export default function AuthPage() {
         setShowRoleSelection(true);
         router.push("/profile");
       } else if (result.success) {
-        toast.success(isLogin ? "Successfully logged in!" : "Account created successfully!");
+        toast.success(
+          isLogin ? "Successfully logged in!" : "Account created successfully!",
+        );
         setShowRoleSelection(true);
         redirectBasedOnRole(result.userData.role, router);
       } else {
         toast.error(result.error || "Authentication failed. Please try again.");
-        setErrors({ submit: result.error || "Something went wrong. Please try again." });
+        setErrors({
+          submit: result.error || "Something went wrong. Please try again.",
+        });
       }
     } catch (err) {
-      console.error("Auth error:", err);
       toast.error("An unexpected error occurred. Please try again.");
       setErrors({ submit: "An unexpected error occurred. Please try again." });
     } finally {
@@ -137,7 +140,10 @@ export default function AuthPage() {
   };
 
   const handleGoogleLogin = async () => {
+    console.log("🔴 Google button clicked. Selected role:", selectedRole);
+
     if (!selectedRole) {
+      console.warn("⚠️ Google login attempted without role selection");
       setErrors({ role: "Please select your role first" });
       return;
     }
@@ -148,6 +154,7 @@ export default function AuthPage() {
       selectedRole === USER_ROLES.INSTITUTE &&
       !instituteName.trim()
     ) {
+      console.warn("⚠️ Google signup attempted for institute without name");
       setErrors({ instituteName: "Institute name is required" });
       return;
     }
@@ -156,20 +163,23 @@ export default function AuthPage() {
     setErrors({});
 
     try {
+      console.log("🟡 Calling loginWithGoogle service...");
       const result = await loginWithGoogle(selectedRole, isLogin, {
         fullName,
         instituteName,
       });
+      console.log("🟢 Google auth result:", result);
 
       if (result.success) {
+        console.log("✅ Google login successful, redirecting...");
         toast.success("Successfully logged in with Google!");
         redirectBasedOnRole(result.userData.role, router);
       } else {
+        console.error("❌ Google login failed:", result.error);
         toast.error(result.error || "Google authentication failed.");
         setErrors({ submit: result.error });
       }
     } catch (err) {
-      console.error("Google auth error:", err);
       toast.error("An unexpected error occurred. Please try again.");
       setErrors({ submit: "An unexpected error occurred. Please try again." });
     } finally {
@@ -195,14 +205,15 @@ export default function AuthPage() {
       const result = await resetPassword(emailToReset);
 
       if (result.success) {
-        toast.success("Password reset email sent! Check your inbox and spam folder.");
+        toast.success(
+          "Password reset email sent! Check your inbox and spam folder.",
+        );
         setShowForgotPassword(false);
         setForgotPasswordEmail("");
       } else {
         setErrors({ forgotEmail: result.error });
       }
     } catch (err) {
-      console.error("Password reset error:", err);
       setErrors({
         forgotEmail: "Failed to send reset email. Please try again.",
       });

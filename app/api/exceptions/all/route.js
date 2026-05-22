@@ -30,27 +30,18 @@ export async function GET(request) {
     }
 
     // Restrict access
-    if (
-      profile.role !== "admin" &&
-      profile.role !== "teacher"
-    ) {
+    if (profile.role !== "admin" && profile.role !== "teacher") {
       return jsonError("Forbidden", 403);
     }
 
     const { searchParams } = new URL(request.url);
 
     // Pagination
-    const page = Math.max(
-      1,
-      parseInt(searchParams.get("page") || "1", 10)
-    );
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
 
     const limit = Math.min(
       100,
-      Math.max(
-        1,
-        parseInt(searchParams.get("limit") || "20", 10)
-      )
+      Math.max(1, parseInt(searchParams.get("limit") || "20", 10)),
     );
 
     const skip = (page - 1) * limit;
@@ -61,10 +52,7 @@ export async function GET(request) {
     // Sorting
     const sortBy = searchParams.get("sortBy") || "createdAt";
 
-    const sortOrder =
-      searchParams.get("sortOrder") === "asc"
-        ? 1
-        : -1;
+    const sortOrder = searchParams.get("sortOrder") === "asc" ? 1 : -1;
 
     const db = await connectDb();
     const collection = db.collection("exceptions");
@@ -119,10 +107,9 @@ export async function GET(request) {
           hasNextPage: page < totalPages,
         },
       },
-      200
+      200,
     );
   } catch (error) {
-    console.error("Exception fetch error:", error);
     return jsonError("Internal server error", 500);
   }
 }

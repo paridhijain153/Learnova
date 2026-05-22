@@ -246,3 +246,9 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #8b5cf6 #05010d;
 }
+
+/* Prevent horizontal overflow on narrow viewports */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}

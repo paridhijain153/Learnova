@@ -78,7 +78,6 @@ export async function PUT(request) {
       200,
     );
   } catch (error) {
-    console.error("Exception update error:", error);
     return jsonError("Internal server error", 500);
   }
 }

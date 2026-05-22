@@ -649,7 +649,7 @@ const StudentDashboard = () => {
         }
       `}</style>
     </div>
-  );
+  );  
 };
 
 const StatCard = ({ color, label, value }) => {
