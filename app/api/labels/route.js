@@ -9,7 +9,12 @@ const MAX_ATTEMPTS = 10;
 export async function GET(request) {
   try {
     // 1. Rate Limiting Check
-    const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    const ip =
+      request.headers.get("x-real-ip") ||
+      request.headers.get("x-vercel-proxied-for") ||
+      request.ip ||
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "127.0.0.1";
     const now = Date.now();
 
     if (!rateLimitMap.has(ip)) {
