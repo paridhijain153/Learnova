@@ -444,7 +444,6 @@ export function Navbar() {
 
           </div>
         </nav>
-      </div>
 
       {/* Mobile Drawer Overlay Architecture */}
       {isMenuOpen && (
