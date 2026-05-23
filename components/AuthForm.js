@@ -246,11 +246,31 @@ export default function AuthForm({
             {errors.password && (
               <p className="text-red-400 text-sm mt-1">{errors.password}</p>
             )}
-            {!isLogin && !errors.password && (
-              <p className="text-gray-400 text-xs mt-1">
-                Min 8 characters with upper, lower, number, and special character.
-              </p>
-            )}
+            {!isLogin && password && (
+  <div className="mt-2 space-y-1 text-xs">
+
+    <p className={password.length >= 8 ? "text-green-400" : "text-red-400"}>
+      {password.length >= 8 ? "✓" : "✗"} Minimum 8 characters
+    </p>
+
+    <p className={/[A-Z]/.test(password) ? "text-green-400" : "text-red-400"}>
+      {/[A-Z]/.test(password) ? "✓" : "✗"} One uppercase letter
+    </p>
+
+    <p className={/[a-z]/.test(password) ? "text-green-400" : "text-red-400"}>
+      {/[a-z]/.test(password) ? "✓" : "✗"} One lowercase letter
+    </p>
+
+    <p className={/[0-9]/.test(password) ? "text-green-400" : "text-red-400"}>
+      {/[0-9]/.test(password) ? "✓" : "✗"} One number
+    </p>
+
+    <p className={/[^A-Za-z0-9]/.test(password) ? "text-green-400" : "text-red-400"}>
+      {/[^A-Za-z0-9]/.test(password) ? "✓" : "✗"} One special character
+    </p>
+
+  </div>
+)}
             {!isLogin && password && (
               <div className="mt-3 space-y-2">
                 <div className="flex items-center justify-between text-xs">
