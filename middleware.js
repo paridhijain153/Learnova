@@ -135,17 +135,39 @@ export async function middleware(request) {
     authToken = request.cookies.get("authToken")?.value;
   }
   
-  const userRole = request.cookies.get("userRole")?.value;
-
   // Cryptographically verify the token — decoding alone is not sufficient
   let isTokenValid = false;
   let isEmailVerified = false;
+  let userRole = null;
 
   if (authToken) {
     const payload = await verifyIdToken(authToken);
     if (payload) {
       isTokenValid = true;
       isEmailVerified = !!payload.email_verified;
+      
+      // Prioritize securely signed custom claim
+      if (payload.role) {
+        userRole = payload.role;
+      } else if (FIREBASE_PROJECT_ID) {
+        // Fallback: securely fetch the user's role from Firestore REST API
+        try {
+          const res = await fetch(
+            `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${payload.sub}`,
+            {
+              headers: { Authorization: `Bearer ${authToken}` },
+              cache: "force-cache",
+              next: { revalidate: 300 } // Cache securely at the edge for 5 minutes
+            }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            userRole = data.fields?.role?.stringValue || null;
+          }
+        } catch (err) {
+          console.error("Middleware Edge fetch failed:", err);
+        }
+      }
     }
   }
 

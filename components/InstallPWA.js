@@ -40,15 +40,17 @@ export default function InstallPWA() {
       setTimeout(() => setIsVisible(true), 5000);
     };
 
-    window.addEventListener("beforeinstallprompt", handler);
-
-    window.addEventListener("appinstalled", () => {
+    const appInstalledHandler = () => {
       setIsInstalled(true);
       setIsVisible(false);
-    });
+    };
+
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", appInstalledHandler);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", appInstalledHandler);
     };
   }, []);
 
