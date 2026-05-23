@@ -156,10 +156,9 @@ function AuthPageContent() {
   };
 
   const handleGoogleLogin = async () => {
-    console.log("🔴 Google button clicked. Selected role:", selectedRole);
-
+    
     if (!selectedRole) {
-      console.warn("⚠️ Google login attempted without role selection");
+      
       setErrors({ role: "Please select your role first" });
       return;
     }
@@ -170,7 +169,7 @@ function AuthPageContent() {
       selectedRole === USER_ROLES.INSTITUTE &&
       !instituteName.trim()
     ) {
-      console.warn("⚠️ Google signup attempted for institute without name");
+      
       setErrors({ instituteName: "Institute name is required" });
       return;
     }
@@ -179,25 +178,25 @@ function AuthPageContent() {
     setErrors({});
 
     try {
-      console.log("🟡 Calling loginWithGoogle service...");
+    
       const result = await loginWithGoogle(selectedRole, isLogin, {
         fullName,
         instituteName,
       });
-      console.log("🟢 Google auth result:", result);
+      
 
       if (result.success) {
-        console.log("✅ Google login successful, redirecting...");
+        
         toast.success("Successfully logged in with Google!");
         redirectBasedOnRole(result.userData.role, router);
       } else {
-        console.error("❌ Google login failed:", result.error);
-        toast.error(result.error || "Google authentication failed.");
-        setErrors({ submit: result.error || "Google authentication failed. Please try again." });
+        
+        toast.error(result.error || "Google sign-in could not be completed. Please try again.");
+        setErrors({ submit: result.error || "Google sign-in could not be completed. Please try again." });
       }
     } catch (err) {
-      toast.error("Google authentication failed. Please check your credentials and try again.");
-      setErrors({ submit: "Google authentication failed. Please try again." });
+      toast.error("An unexpected error occurred during Google authentication. Please try again later.");
+      setErrors({ submit: "An unexpected error occurred during Google authentication. Please try again later." });
     } finally {
       setIsLoading(false);
     }
