@@ -1,11 +1,9 @@
 import {
   collection,
-  setDoc,
   doc,
   getDocs,
   getDoc,
   query,
-  serverTimestamp,
   where,
   limit,
 } from "firebase/firestore";
@@ -22,48 +20,28 @@ function getTodayKey() {
 
 /**
  * Checks whether a user has already recorded attendance for today.
- * @param {string} userId - The Firebase Auth user ID to check.
- * @returns {Promise<boolean>} True if the user has checked in today, false otherwise.
- * @example
- * const alreadyIn = await hasCheckedInToday('user_abc123');
- * if (alreadyIn) return true;
  */
 export async function hasCheckedInToday(userId) {
   if (!userId || !db) {
     return false;
   }
+
   const today = getTodayKey();
 
   const attendanceQuery = query(
-  collection(db, "attendance_records"),
-  where("userId", "==", userId),
-  where("date", "==", today),
-  limit(1)
-);
+    collection(db, "attendance_records"),
+    where("userId", "==", userId),
+    where("date", "==", today),
+    limit(1)
+  );
 
-const snapshot = await getDocs(attendanceQuery);
+  const snapshot = await getDocs(attendanceQuery);
 
-return !snapshot.empty;
+  return !snapshot.empty;
 }
 
 /**
- * Records a new attendance entry for a user if they have not already checked in today.
- * Also triggers a recalculation of the user's overall attendance rate.
- * @param {Object} params - Attendance parameters.
- * @param {string} params.userId - The Firebase Auth user ID.
- * @param {string} params.studentName - The student's full name.
- * @param {string} params.email - The student's email address.
- * @param {number} params.confidenceScore - Face-recognition confidence score (0 to 1).
- * @returns {Promise<{alreadyRecorded: boolean}>} Object indicating whether attendance was already recorded for today.
- * @throws {Error} If userId or db is unavailable.
- * @example
- * const result = await recordAttendance({
- * userId: 'user_abc123',
- * studentName: 'Alice Smith',
- * email: 'alice@example.com',
- * confidenceScore: 0.97,
- * });
- * // { alreadyRecorded: false }
+ * Records attendance securely through backend API.
  */
 export async function recordAttendance({
   userId,
@@ -76,11 +54,17 @@ export async function recordAttendance({
   }
 
   const todayKey = getTodayKey();
-  const docRef = doc(db, "attendance_records", `${userId}_${todayKey}`);
 
-  // INTERCEPT OFFLINE SUBMISSIONS
+  const docRef = doc(
+    db,
+    "attendance_records",
+    `${userId}_${todayKey}`
+  );
+
+  // OFFLINE MODE
   if (typeof window !== "undefined" && !navigator.onLine) {
     console.warn("Device is offline. Queuing attendance locally.");
+
     await saveToOutbox({
       userId,
       studentName,
@@ -88,13 +72,17 @@ export async function recordAttendance({
       confidenceScore: confidenceScore ?? 0,
       date: todayKey,
     });
-    
-    // Attempt to register Background Sync for later flush
+
     await registerBackgroundSync();
 
-    return { alreadyRecorded: false, newRate: null, queuedOffline: true };
+    return {
+      alreadyRecorded: false,
+      newRate: null,
+      queuedOffline: true,
+    };
   }
 
+  // DUPLICATE CHECK
   const existingDoc = await getDoc(docRef);
 
   if (existingDoc.exists()) {
@@ -103,17 +91,31 @@ export async function recordAttendance({
     };
   }
 
-  await setDoc(docRef, {
-    userId,
-    studentName,
-    email,
-    timestamp: serverTimestamp(),
-    date: todayKey,
-    status: "present",
-    confidenceScore: confidenceScore ?? 0,
+  // SECURE SERVER RECORDING
+  const response = await fetch("/api/attendance/record", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      userId,
+      studentName,
+      email,
+      confidenceScore: confidenceScore ?? 0,
+      date: todayKey,
+    }),
   });
+
+  if (!response.ok) {
+    throw new Error(
+      "Failed to record attendance securely on the server."
+    );
+  }
 
   const newRate = await recalculateAttendanceRate(userId);
 
-  return { alreadyRecorded: false, newRate };
+  return {
+    alreadyRecorded: false,
+    newRate,
+  };
 }
