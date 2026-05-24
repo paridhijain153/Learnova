@@ -37,6 +37,10 @@ const SmartNoticeBoard = () => {
   const [sortOrder, setSortOrder] = useState("newest");
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
 
+  // Added pagination states here
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const [readNotices, setReadNotices] = useState(new Set());
 
   const userId = user?.uid || user?.id || "anonymous";
@@ -171,7 +175,6 @@ const SmartNoticeBoard = () => {
     if (hours < 24) {
       return `${hours}h ago`;
     }
-
     const days = Math.floor(hours / 24);
 
     if (days < 7) {
@@ -213,6 +216,11 @@ const SmartNoticeBoard = () => {
     dateRange,
     showOnlyUnread,
   ]);
+
+  // Automatically snap back to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedPriority, selectedTags, dateRange, showOnlyUnread, sortOrder]);
 
   // Filter notices
   const filteredNotices = useMemo(() => {
@@ -332,6 +340,13 @@ const SmartNoticeBoard = () => {
     readNotices,
   ]);
 
+  // Math calculations for chunking notices into sets of 5
+  const totalPages = Math.ceil(filteredNotices.length / itemsPerPage);
+  const safeCurrentPage = currentPage > totalPages && totalPages > 0 ? totalPages : currentPage;
+  const indexOfLastItem = safeCurrentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const paginatedNotices = filteredNotices.slice(indexOfFirstItem, indexOfLastItem);
+
   // Unread count
   const unreadCount = useMemo(() => {
     return notices.filter(
@@ -348,6 +363,7 @@ const SmartNoticeBoard = () => {
     setDateRange("all");
     setSortOrder("newest");
     setShowOnlyUnread(false);
+    setCurrentPage(1);
   }, []);
 
   // Toggle tags
@@ -495,7 +511,7 @@ const SmartNoticeBoard = () => {
           </aside>
 
           {/* Notices */}
-          <main>
+          <main className="flex flex-col justify-between">
             {filteredNotices.length === 0 ? (
               <EmptyNoticeState
                 query={searchQuery}
@@ -504,59 +520,91 @@ const SmartNoticeBoard = () => {
                 }
               />
             ) : (
-              <motion.div
-                layout
-                className="grid gap-5 lg:grid-cols-2"
-              >
-                <AnimatePresence>
-                  {filteredNotices.map((notice) => {
-                    const isRead =
-                      readNotices.has(notice.id);
+              <div>
+                {/* Looping through paginatedNotices array slice instead of filteredNotices */}
+                <motion.div
+                  layout
+                  className="grid gap-5 lg:grid-cols-2"
+                >
+                  <AnimatePresence>
+                    {paginatedNotices.map((notice) => {
+                      const isRead =
+                        readNotices.has(notice.id);
 
-                    return (
-                      <motion.div
-                        key={notice.id}
-                        layout
-                        initial={{
-                          opacity: 0,
-                          y: 20,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                        }}
-                        exit={{
-                          opacity: 0,
-                          scale: 0.95,
-                        }}
-                        transition={{
-                          duration: 0.3,
-                        }}
+                      return (
+                        <motion.div
+                          key={notice.id}
+                          layout
+                          initial={{
+                            opacity: 0,
+                            y: 20,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            y: 0,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            scale: 0.95,
+                          }}
+                          transition={{
+                            duration: 0.3,
+                          }}
+                        >
+                          <NoticeCard
+                            notice={notice}
+                            isRead={isRead}
+                            onToggleRead={() =>
+                              isRead
+                                ? markAsUnread(
+                                    notice.id
+                                  )
+                                : markAsRead(
+                                    notice.id
+                                  )
+                            }
+                            searchQuery={
+                              searchQuery
+                            }
+                            getRelativeTime={
+                              getRelativeTime
+                            }
+                          />
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </motion.div>
+
+                {/* Pagination Controls Interface Panel */}
+                {totalPages > 1 && (
+                  <div className="mt-8 flex items-center justify-between border-t border-slate-800 pt-6">
+                    <p className="text-sm text-slate-400">
+                      Showing <span className="font-semibold text-white">{indexOfFirstItem + 1}</span> to{" "}
+                      <span className="font-semibold text-white">
+                        {Math.min(indexOfLastItem, filteredNotices.length)}
+                      </span>{" "}
+                      of <span className="font-semibold text-white">{filteredNotices.length}</span> notices
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                        disabled={safeCurrentPage === 1}
+                        className="rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2 text-sm font-medium transition-all hover:bg-slate-800 disabled:opacity-40"
                       >
-                        <NoticeCard
-                          notice={notice}
-                          isRead={isRead}
-                          onToggleRead={() =>
-                            isRead
-                              ? markAsUnread(
-                                  notice.id
-                                )
-                              : markAsRead(
-                                  notice.id
-                                )
-                          }
-                          searchQuery={
-                            searchQuery
-                          }
-                          getRelativeTime={
-                            getRelativeTime
-                          }
-                        />
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
-              </motion.div>
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                        disabled={safeCurrentPage === totalPages}
+                        className="rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2 text-sm font-medium transition-all hover:bg-slate-800 disabled:opacity-40"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </main>
         </div>
