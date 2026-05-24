@@ -61,8 +61,8 @@ const withPWA = withPWAInit({
 
 const ContentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "script-src 'self' https://apis.google.com https://www.gstatic.com",
+  "style-src 'self' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.public.blob.vercel-storage.com https://github.com",
   "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebase.io https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.public.blob.vercel-storage.com https://api.emailjs.com",

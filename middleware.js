@@ -126,6 +126,44 @@ async function verifyIdToken(token) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
+  // We only want to generate CSP for HTML pages, not static assets or APIs.
+  const isPage = !pathname.startsWith("/_next") && 
+                 !pathname.startsWith("/api") && 
+                 !pathname.match(/\.(?:png|jpg|jpeg|gif|svg|ico|css|js|woff2?|json)$/);
+
+  let nonce;
+  let contentSecurityPolicyHeaderValue;
+
+  if (isPage) {
+    // Generate a cryptographic nonce (base-64 encoded UUID)
+    nonce = btoa(crypto.randomUUID());
+    
+    // Construct the CSP string using the generated nonce
+    const csp = [
+      "default-src 'self'",
+      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://apis.google.com https://www.gstatic.com`,
+      `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.public.blob.vercel-storage.com https://github.com",
+      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebase.io https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.public.blob.vercel-storage.com https://api.emailjs.com",
+      "media-src 'self' blob:",
+      "worker-src 'self' blob:",
+      "frame-src 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "upgrade-insecure-requests",
+    ].join("; ");
+
+    contentSecurityPolicyHeaderValue = csp;
+  }
+
+  // Set standard headers on request so Next.js can read the x-nonce
+  const requestHeaders = new Headers(request.headers);
+  if (isPage) {
+    requestHeaders.set("x-nonce", nonce);
+  }
+
   // Retrieve token from Authorization header or cookies
   let authToken = null;
   const authorization = request.headers.get("authorization");
@@ -246,19 +284,23 @@ export async function middleware(request) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  if (isPage) {
+    response.headers.set("Content-Security-Policy", contentSecurityPolicyHeaderValue);
+  }
+
+  return response;
 }
 
 // Next.js Middleware matcher configuration
 export const config = {
   matcher: [
-    "/student/:path*",
-    "/teacher/:path*",
-    "/admin/:path*",
-    "/institute/:path*",
-    "/profile/:path*",
-    "/settings/:path*",
-    "/verify/:path*",
-    "/auth",
+    // Match all HTML page routes. Exclude APIs, static assets, favicon, manifest, and service worker.
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|workbox-.*).*)",
   ],
 };
