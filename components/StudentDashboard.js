@@ -19,6 +19,7 @@ import {
   Download,
   Star,
   Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 
 import DashboardSkeleton from "@/components/ui/DashboardSkeleton";
@@ -61,6 +62,7 @@ const StudentDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(null);
+  const [error, setError] = useState(null);
 
   const [todayClasses, setTodayClasses] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
@@ -89,57 +91,63 @@ const StudentDashboard = () => {
     }, 1500);
 
     const updateDashboard = () => {
-      const now = new Date();
+      try {
+        const now = new Date();
 
-      setCurrentTime(now);
+        setCurrentTime(now);
 
-      const hour = now.getHours();
-      const minute = now.getMinutes();
-      const day = now.getDay();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const day = now.getDay();
 
-      const isWeekday = day >= 1 && day <= 5;
-      const isAttendanceTime = hour === 9 && minute <= 10;
-      const newIsAttendance = isWeekday && isAttendanceTime;
+        const isWeekday = day >= 1 && day <= 5;
+        const isAttendanceTime = hour === 9 && minute <= 10;
+        const newIsAttendance = isWeekday && isAttendanceTime;
 
-      setIsAttendanceWindow((prev) => (prev !== newIsAttendance ? newIsAttendance : prev));
+        setIsAttendanceWindow((prev) => (prev !== newIsAttendance ? newIsAttendance : prev));
 
-      const dayNames = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ];
+        const dayNames = [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ];
 
-      const today = dayNames[day];
+        const today = dayNames[day];
 
-      const classes = weeklySchedule[today] || [];
+        const classes = weeklySchedule[today] || [];
 
-      setTodayClasses(classes);
+        setTodayClasses(classes);
 
-      const upcoming = classes.find((cls) => {
-        const [startTime] = cls.time.split("-");
+        const upcoming = classes.find((cls) => {
+          const [startTime] = cls.time.split("-");
 
-        const [classHour, classMinute] = startTime
-          .split(":")
-          .map(Number);
+          const [classHour, classMinute] = startTime
+            .split(":")
+            .map(Number);
 
-        return (
-          hour < classHour ||
-          (hour === classHour && minute < classMinute)
-        );
-      });
+          return (
+            hour < classHour ||
+            (hour === classHour && minute < classMinute)
+          );
+        });
 
-      setUpcomingClass(upcoming || null);
+        setUpcomingClass(upcoming || null);
+        
+        setRecentActivity(mockRecentActivity);
+        setError(null);
+      } catch (err) {
+        setError("Failed to load dashboard data. Please try again.");
+        console.error("Error updating dashboard:", err);
+      }
     };
 
     updateDashboard();
 
     const timer = setInterval(updateDashboard, 1000);
-
-    setRecentActivity(mockRecentActivity);
 
     return () => {
       clearInterval(timer);
@@ -181,6 +189,29 @@ const StudentDashboard = () => {
 
   if (loading) {
     return <DashboardSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden flex items-center justify-center">
+        <div className="fixed inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-blue-500/10 pointer-events-none animate-gradientMove" />
+        <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(139,92,246,0.12)_0%,transparent_60%)] pointer-events-none" />
+        <div className="relative z-10 text-center text-white px-4">
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-10 h-10 text-red-400" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Error Loading Dashboard</h2>
+          <p className="text-gray-400 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
+          >
+            <RefreshCw className="w-5 h-5 mr-2 inline" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

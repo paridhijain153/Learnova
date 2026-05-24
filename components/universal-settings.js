@@ -28,6 +28,7 @@ import {
   X,
   AlertTriangle,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "./Navbar";
@@ -75,6 +76,8 @@ export default function UniversalSettings() {
   const [showPassword, setShowPassword] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const getUserInitials = (name) => {
     if (!name) return "U";
@@ -249,19 +252,33 @@ export default function UniversalSettings() {
   });
 
   useEffect(() => {
-    if (user) {
-      setSettings((prev) => ({
-        ...prev,
-        profile: {
-          ...prev.profile,
-          name: getUserDisplayName(),
-          email: getUserEmail(),
-          phone: user.phone || prev.profile.phone,
-          bio: user.bio || prev.profile.bio,
-          avatar: getUserPhoto() || prev.profile.avatar,
-        },
-      }));
-    }
+    const loadSettings = async () => {
+      try {
+        setIsInitialLoading(true);
+        setError(null);
+        
+        if (user) {
+          setSettings((prev) => ({
+            ...prev,
+            profile: {
+              ...prev.profile,
+              name: getUserDisplayName(),
+              email: getUserEmail(),
+              phone: user.phone || prev.profile.phone,
+              bio: user.bio || prev.profile.bio,
+              avatar: getUserPhoto() || prev.profile.avatar,
+            },
+          }));
+        }
+      } catch (err) {
+        setError("Failed to load settings. Please try again.");
+        console.error("Error loading settings:", err);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+    
+    loadSettings();
   }, [user]);
 
   const updateSetting = (section, key, value) => {
@@ -277,6 +294,7 @@ export default function UniversalSettings() {
 
   const saveSettings = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const response = await fetch("/api/settings", {
         method: "PATCH",
@@ -287,6 +305,7 @@ export default function UniversalSettings() {
       setHasChanges(false);
       toast.success("Settings updated successfully!");
     } catch (error) {
+      setError("Failed to save settings. Please try again.");
       toast.error("Failed to save settings. Please try again.");
     } finally {
       setIsLoading(false);
@@ -331,6 +350,38 @@ export default function UniversalSettings() {
     { id: "data", label: "Data & Storage", icon: Database },
     { id: "help", label: "Help & Support", icon: HelpCircle },
   ];
+
+  if (isInitialLoading) {
+    return (
+      <div className="min-h-screen relative rounded-2xl bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen relative rounded-2xl bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 flex items-center justify-center">
+        <div className="text-center text-white px-4">
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-10 h-10 text-red-400" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Error Loading Settings</h2>
+          <p className="text-gray-400 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105"
+          >
+            <RefreshCw className="w-4 h-4 mr-2 inline" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative rounded-2xl bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
