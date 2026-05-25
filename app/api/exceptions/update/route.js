@@ -13,8 +13,7 @@ export const dynamic = "force-dynamic";
 const exceptionUpdateSchema = z.object({
   exceptionId: z
     .string({
-      required_error: "exceptionId is required",
-      invalid_type_error: "exceptionId must be a string",
+      error: "exceptionId is required",
     })
     .trim()
     .min(1, "exceptionId is required")
@@ -23,10 +22,8 @@ const exceptionUpdateSchema = z.object({
     }),
   status: z
     .enum(["approved", "rejected"], {
-      required_error: "Status is required",
-      invalid_type_error: "Status must be either 'approved' or 'rejected'",
-    })
-    .transform((val) => val.trim()),
+      error: "Invalid status value",
+    }),
   comments: z.string().optional(),
 });
 
@@ -86,9 +83,10 @@ export const PUT = withErrorHandler(async (request) => {
       { _id: new ObjectId(exceptionId) },
       {
         $set: {
-          status: trimmedStatus,
+          status: status,
           comments,
           reviewedBy: decodedToken.email,
+          approverId: decodedToken.uid,
           reviewedAt: new Date(),
           updatedAt: new Date(),
         },
@@ -99,6 +97,10 @@ export const PUT = withErrorHandler(async (request) => {
   }
 
   if (result.matchedCount === 0) throw new NotFoundError("Exception not found");
+
+  console.log(
+    `[Audit Log] Exception ${exceptionId} ${status} by approver UID: ${decodedToken.uid} (${decodedToken.email}, Role: ${profile.role}) at ${new Date().toISOString()}`
+  );
 
   return NextResponse.json({ message: "Exception updated successfully" });
 });
