@@ -40,7 +40,7 @@ async function publishNotice(request) {
 
   return NextResponse.json({
     success: true,
-    notice: { id: result.id, ...newData }
+    notice: { id: result.id, ...newNotice }
   });
 }
 
