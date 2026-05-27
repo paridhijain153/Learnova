@@ -143,34 +143,46 @@ async function handleSync(request) {
     // duplicate records under concurrent sync requests from multiple tabs or devices.
     const newDocRef = db.collection("attendance_records").doc(`${decodedToken.uid}_${recordDate}`);
 
-    await db.runTransaction(async (transaction) => {
-      const existingAttendance = await transaction.get(newDocRef);
-      if (existingAttendance.exists) {
-        return;
-      }
+    // Wrap each transaction individually so a single Firestore failure
+    // (write lock, network blip) does not crash the entire batch.
+    // Only successfully written records are acknowledged to the client.
+    try {
+      await db.runTransaction(async (transaction) => {
+        const existingAttendance = await transaction.get(newDocRef);
+        if (existingAttendance.exists) {
+          return;
+        }
 
-      if (
-        (record.studentName && record.studentName !== serverIdentity.studentName) ||
-        (record.email && record.email !== serverIdentity.email)
-      ) {
-        console.warn(
-          `User ${decodedToken.uid} submitted offline attendance metadata that does not match the server profile`,
-        );
-      }
+        if (
+          (record.studentName && record.studentName !== serverIdentity.studentName) ||
+          (record.email && record.email !== serverIdentity.email)
+        ) {
+          console.warn(
+            `User ${decodedToken.uid} submitted offline attendance metadata that does not match the server profile`,
+          );
+        }
 
-      transaction.set(newDocRef, {
-        userId: decodedToken.uid,
-        studentName: serverIdentity.studentName,
-        email: serverIdentity.email,
-        instituteId,
-        timestamp: FieldValue.serverTimestamp(),
-        date: recordDate,
-        status: "present",
-        confidenceScore: normalizedConfidence,
-        offlineSynced: true,
-        queuedAt: new Date(record.queuedAt),
+        transaction.set(newDocRef, {
+          userId: decodedToken.uid,
+          studentName: serverIdentity.studentName,
+          email: serverIdentity.email,
+          instituteId,
+          timestamp: FieldValue.serverTimestamp(),
+          date: recordDate,
+          status: "present",
+          confidenceScore: normalizedConfidence,
+          offlineSynced: true,
+          queuedAt: new Date(record.queuedAt),
+        });
       });
-    });
+    } catch (txnError) {
+      console.error(
+        `[sync] Transaction failed for record ${decodedToken.uid}_${recordDate}:`,
+        txnError.message,
+      );
+      // Skip this record — do NOT acknowledge it so the client retries later
+      continue;
+    }
 
     successfulIds.push(record.id);
     processedUserDates.add(userDateKey);
