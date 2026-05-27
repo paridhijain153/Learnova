@@ -340,19 +340,21 @@ export function Navbar() {
                             </div>
                           ) : (
                             notifications.map((n) => (
-                              <div
-                                key={n.id}
-                                onClick={() => markAsRead(n.id)}
-                                className={`p-4 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${!n.read ? "bg-accent/5 dark:bg-accent/10" : ""
-                                  }`}
-                              >
+                              <button
+  key={n.id}
+  onClick={() => markAsRead(n.id)}
+  className={`w-full text-left p-4 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-accent shadow rounded-lg ${
+  !n.read ? "bg-accent/5 dark:bg-accent/10" : ""
+}`}
+  aria-label={`Notification: ${n.message}`}
+>
                                 <p className="text-sm text-gray-900 dark:text-gray-100">
                                   {n.message}
                                 </p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
                                   {n.time}
                                 </p>
-                              </div>
+                              </button>
                             ))
                           )}
                         </div>
