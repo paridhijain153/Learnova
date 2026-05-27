@@ -347,17 +347,17 @@ const InstituteDashboard = () => {
 
             {/* Notifications */}
             <button
-              aria-label="Notifications"
+              aria-label={`Notifications${dashboardData.pendingRequests > 0 ? `, ${dashboardData.pendingRequests > 99 ? '99+' : dashboardData.pendingRequests} pending requests` : ''}`}
               className="relative p-2.5 bg-gray-800/60 hover:bg-gray-700/60 
                              rounded-xl border border-gray-600/40 transition-colors shadow-sm"
             >
               <Bell className="w-5 h-5 text-gray-300" />
               {dashboardData.pendingRequests > 0 && (
                 <span
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white 
+                  className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 bg-red-500 text-white 
                                text-xs rounded-full flex items-center justify-center shadow-md"
                 >
-                  {dashboardData.pendingRequests}
+                  {dashboardData.pendingRequests > 99 ? "99+" : dashboardData.pendingRequests}
                 </span>
               )}
             </button>
