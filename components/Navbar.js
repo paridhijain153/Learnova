@@ -29,6 +29,8 @@ import {
   Moon,
   Keyboard,
   Search,
+  MessageSquareWarning,
+  BellOff,
   HeartPulse,
 } from "lucide-react";
 
@@ -396,7 +398,17 @@ export function Navbar() {
                           </div>
                           <div className="max-h-60 overflow-y-auto divide-y divide-zinc-100/50 dark:divide-white/5">
                             {notifications.length === 0 ? (
-                              <p className="p-4 text-center text-sm text-zinc-400">No new notices</p>
+                              <div className="flex flex-col items-center justify-center py-8 px-4 text-center space-y-3.5 select-none">
+                                <div className="p-3 bg-zinc-100 dark:bg-white/5 rounded-full text-zinc-400 dark:text-zinc-500">
+                                  <BellOff className="h-6 w-6 stroke-[1.5]" />
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">You're all caught up!</p>
+                                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 max-w-[180px] leading-normal mx-auto">
+                                    No new notifications to display.
+                                  </p>
+                                </div>
+                              </div>
                             ) : (
                               notifications.map((n) => (
                                 <div
