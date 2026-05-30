@@ -12,15 +12,63 @@ import {
   PlayCircle
 } from "lucide-react";
 import ShareButton from "@/components/ui/ShareButton";
+import StudyDeck from "@/components/flashcards/StudyDeck";
 import toast from "react-hot-toast";
 
 export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [selectionText, setSelectionText] = useState("");
+  const [selectionRect, setSelectionRect] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [frontText, setFrontText] = useState("");
+  const [backText, setBackText] = useState("");
+  const [originText, setOriginText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Listen for user text selection to enable quick flashcard creation
+  useEffect(() => {
+    function handleSelection() {
+      try {
+        const sel = window.getSelection();
+        const text = sel ? sel.toString().trim() : "";
+        if (!text) {
+          setSelectionText("");
+          setSelectionRect(null);
+          setOriginText("");
+          return;
+        }
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const anchorNode = range.startContainer.parentElement;
+        const originElement = anchorNode?.closest("p,div,section,article") ?? anchorNode;
+        const origin = originElement?.innerText?.trim() || text;
+        setSelectionText(text);
+        setOriginText(origin);
+        setSelectionRect({ x: rect.left, y: rect.top, width: rect.width, height: rect.height });
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const onMouseUp = () => setTimeout(handleSelection, 10);
+    const onKeyUp = () => setTimeout(handleSelection, 10);
+    const onScroll = () => setSelectionRect(null);
+
+    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("keyup", onKeyUp);
+    window.addEventListener("scroll", onScroll, true);
+
+    return () => {
+      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("scroll", onScroll, true);
+    };
   }, []);
 
   if (!mounted) return null;
@@ -170,6 +218,79 @@ export default function CourseDetailPage() {
               ))}
             </div>
           </section>
+
+          {/* Study / Flashcards */}
+          <section className="mb-8">
+            <h2 className="text-2xl font-bold tracking-tight text-zinc-100 mb-6">Study</h2>
+            <div className="rounded-2xl border border-zinc-800/50 bg-zinc-900/20 p-4">
+              <p className="text-zinc-400 mb-4">Select any text on this page to create a flashcard.</p>
+              <StudyDeck />
+            </div>
+          </section>
+
+          {/* Selection floating toolbar */}
+          {selectionRect && !showCreate && (
+            <div
+              style={{
+                position: "fixed",
+                left: selectionRect.x + window.scrollX,
+                top: selectionRect.y + window.scrollY - 40,
+                zIndex: 60,
+              }}
+            >
+              <button
+                onClick={() => {
+                  setFrontText(selectionText);
+                  setBackText("");
+                  setShowCreate(true);
+                }}
+                className="px-3 py-1 rounded-md bg-indigo-600 text-white shadow-lg"
+              >
+                Create Flashcard
+              </button>
+            </div>
+          )}
+
+          {/* Create flashcard panel */}
+          {showCreate && (
+            <div className="fixed inset-0 z-50 flex items-start justify-center pt-28">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-11/12 max-w-xl shadow-2xl">
+                <h3 className="text-lg font-semibold mb-2">Create Flashcard</h3>
+                <label className="text-xs text-zinc-400">Front (selected text)</label>
+                <textarea value={frontText} onChange={(e)=>setFrontText(e.target.value)} className="w-full rounded-md p-2 mb-3 bg-zinc-800 text-zinc-100" rows={3} />
+                <label className="text-xs text-zinc-400">Back (answer)</label>
+                <textarea value={backText} onChange={(e)=>setBackText(e.target.value)} className="w-full rounded-md p-2 mb-4 bg-zinc-800 text-zinc-100" rows={4} />
+                <div className="flex gap-2 justify-end">
+                  <button onClick={()=>{ setShowCreate(false); setSelectionRect(null); setSelectionText(""); }} className="px-4 py-2 rounded-xl bg-zinc-700 text-white">Cancel</button>
+                  <button
+                    onClick={async ()=>{
+                      if(!frontText.trim()||!backText.trim()){ toast.error("Both front and back are required"); return; }
+                      try{
+                        setSubmitting(true);
+                        const res = await fetch('/api/flashcards',{
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ front: frontText, back: backText, origin: originText })
+                        });
+                        if(!res.ok) throw new Error('Failed');
+                        const data = await res.json();
+                        toast.success('Flashcard created');
+                        setShowCreate(false);
+                        setSelectionRect(null);
+                        setSelectionText("");
+                        setOriginText("");
+                      }catch(e){
+                        console.error(e);
+                        toast.error('Could not create flashcard');
+                      }finally{ setSubmitting(false); }
+                    }}
+                    disabled={submitting}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 text-white"
+                  >Create</button>
+                </div>
+              </div>
+            </div>
+          )}
         </motion.div>
       </main>
     </div>
