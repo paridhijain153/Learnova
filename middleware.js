@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import * as jose from "jose";
 import { Redis } from "@upstash/redis";
+import { validateCsrfRequest } from "@/lib/csrf";
 
 const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const FIREBASE_AUTH_DOMAIN = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
@@ -46,6 +47,11 @@ const AUTH_RATE_LIMITED_PATHS = [
   "/api/auth/verify-otp",
   "/api/auth/verify-email",
   "/api/auth/logout",
+];
+
+const PUBLIC_API_PATHS = [
+  "/api/auth/csrf",
+  "/api/auth/reset-password",
 ];
 
 function isAuthRoute(pathname) {
@@ -321,9 +327,14 @@ async function verifyIdToken(token) {
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const isUnsafeMethod = !["GET", "HEAD", "OPTIONS"].includes(request.method);
 
   // Clean up expired rate limit entries periodically
   cleanupRateLimitMap();
+
+  // NOTE: CSRF validation applies only for cookie-authenticated requests.
+  // Requests authenticated via Authorization: Bearer <token> are not CSRF-vulnerable.
+  // Defer CSRF validation until after token extraction/verification below.
 
   // ── 1. Rate limiting for auth API routes ──
   if (isAuthRoute(pathname)) {
@@ -381,6 +392,19 @@ export async function middleware(request) {
       isTokenValid = true;
       isEmailVerified = !!payload.email_verified;
       userRole = payload.role || null;
+    }
+  }
+
+  // Enforce CSRF only for unsafe API methods when the request is authenticated via cookie.
+  const tokenFromCookie = request.cookies.get("authToken")?.value || null;
+  if (pathname.startsWith("/api/") && isUnsafeMethod && tokenFromCookie) {
+    try {
+      validateCsrfRequest(request);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error.message || "Forbidden: invalid CSRF token" },
+        { status: error.statusCode || 403 }
+      );
     }
   }
 

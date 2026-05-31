@@ -13,6 +13,11 @@ import { doc, setDoc } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { useSessionMonitor } from "@/hooks/useSessionMonitor";
+import {
+  ensureClientCsrfToken,
+  getClientCsrfToken,
+  shouldAttachCsrfToken,
+} from "@/lib/csrf";
 
 const modalInitialState = {
   isShortcutsOpen: false,
@@ -43,6 +48,8 @@ const modalEventMap = {
   "learnova:open-shortcuts": "OPEN_SHORTCUTS",
   "learnova:open-search": "OPEN_SEARCH",
 };
+
+const CSRF_FETCH_PATCH_FLAG = "__learnovaCsrfFetchPatched";
 
 const InstallPWA = dynamic(() => import("@/components/InstallPWA"), {
   ssr: false,
@@ -86,6 +93,73 @@ export default function ClientLayout() {
       listeners.forEach(([eventName, listener]) => {
         window.removeEventListener(eventName, listener);
       });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    let cancelled = false;
+    const originalFetch = window.fetch.bind(window);
+
+    if (!window[CSRF_FETCH_PATCH_FLAG]) {
+      window.fetch = async (input, init = {}) => {
+        const requestInput = input instanceof Request ? input : null;
+        const requestUrl =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : requestInput?.url || "";
+        const requestMethod =
+          (init.method || requestInput?.method || "GET").toUpperCase();
+
+        if (shouldAttachCsrfToken(requestUrl, requestMethod)) {
+          let csrfToken = getClientCsrfToken();
+          if (!csrfToken) {
+            csrfToken = await ensureClientCsrfToken(originalFetch);
+          }
+
+          if (csrfToken) {
+            const requestHeaders = new Headers(requestInput?.headers || init.headers || {});
+            if (!requestHeaders.has("x-csrf-token")) {
+              requestHeaders.set("X-CSRF-Token", csrfToken);
+            }
+
+            if (requestInput) {
+              input = new Request(requestInput, { headers: requestHeaders });
+            } else {
+              init = { ...init, headers: requestHeaders };
+            }
+          }
+        }
+
+        return originalFetch(input, init);
+      };
+
+      window[CSRF_FETCH_PATCH_FLAG] = true;
+    }
+
+    const bootstrapCsrf = async () => {
+      if (!getClientCsrfToken()) {
+        await ensureClientCsrfToken(originalFetch);
+      }
+    };
+
+    bootstrapCsrf().catch(() => {
+      if (!cancelled) {
+        console.warn("[csrf] Failed to bootstrap CSRF token");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      if (window[CSRF_FETCH_PATCH_FLAG]) {
+        window.fetch = originalFetch;
+        delete window[CSRF_FETCH_PATCH_FLAG];
+      }
     };
   }, []);
 
