@@ -83,8 +83,8 @@ async function rateLimit(ip, pathname, request) {
 
       return { allowed: true, remaining: limit - current };
     } catch (err) {
-      console.error("[rate-limit] Upstash Redis error, granting pass:", err);
-      return { allowed: true, remaining: limit - 1 };
+      console.error("[rate-limit] Upstash Redis error — denying request:", err);
+      return { allowed: false, remaining: 0, retryAfter: Math.ceil(windowMs / 1000) };
     }
   }
 
