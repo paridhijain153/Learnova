@@ -2,6 +2,7 @@ import { POST } from "./route";
 import { authenticateRequest, parseJSON } from "../../../../lib/error-handler";
 import { checkRateLimit } from "../../../../lib/rateLimit";
 import { connectDb } from "../../../../lib/mongodb";
+import { UnauthorizedError } from "../../../../lib/errors";
 import { assertApiSuccess } from "../../../../testUtils/assertApiSuccess";
 import { assertApiError } from "../../../../testUtils/assertApiError";
 
@@ -106,7 +107,6 @@ describe("notifications seed route", () => {
   });
 
   test("rejects request with 401 if unauthorized", async () => {
-    const { UnauthorizedError } = require("../../../../lib/errors");
     authenticateRequest.mockRejectedValue(new UnauthorizedError("Unauthorized"));
 
     const response = await POST(createMockRequest());

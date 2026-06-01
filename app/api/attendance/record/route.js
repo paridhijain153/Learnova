@@ -62,13 +62,13 @@ export const POST = withErrorHandler(async (request) => {
     steps: [
       {
         name: "write_attendance",
-        execute: async () => {
+        execute: async (ctx) => {
           const docRef = db.collection("attendance_records").doc(`${userId}_${normalizedDate}`);
           await db.runTransaction(async (transaction) => {
             const existingDoc = await transaction.get(docRef);
             if (existingDoc.exists) {
               // Mark as already recorded — don't throw (idempotent)
-              alreadyRecorded = true;
+              ctx._alreadyRecorded = true;
               return;
             }
 
@@ -93,8 +93,8 @@ export const POST = withErrorHandler(async (request) => {
       },
       {
         name: "award_xp",
-        execute: async () => {
-          if (alreadyRecorded) {
+        execute: async (ctx) => {
+          if (ctx._alreadyRecorded) {
             // Don't award XP if attendance was already recorded
             return;
           }
@@ -107,7 +107,7 @@ export const POST = withErrorHandler(async (request) => {
     ],
   });
 
-  if (alreadyRecorded) {
+  if (sagaResult.context._alreadyRecorded) {
     return jsonSuccess({ alreadyRecorded: true }, 200);
   }
 

@@ -344,7 +344,7 @@ export const POST =
         steps: [
           {
             name: "upload_blob",
-            execute: async () => {
+            execute: async (ctx) => {
               const blob =
                 await put(
                   fileName,
@@ -356,26 +356,25 @@ export const POST =
                       "public",
                   }
                 );
-              // Store blob URL on the scoped variable for subsequent steps
-              uploadedBlobUrl = blob.url;
+              ctx._blobUrl = blob.url;
               return blob;
             },
-            compensate: async () => {
-              if (uploadedBlobUrl) {
+            compensate: async (ctx) => {
+              if (ctx._blobUrl) {
                 try {
-                  await del(uploadedBlobUrl);
+                  await del(ctx._blobUrl);
                 } catch {}
               }
             },
           },
           {
             name: "write_mongodb",
-            execute: async () => {
+            execute: async (ctx) => {
               const user = {
                 name: sanitizedName,
                 rollNo: sanitizedRollNo,
                 email,
-                image: uploadedBlobUrl,
+                image: ctx._blobUrl,
                 firebaseUid: decodedToken.uid,
               };
 
@@ -388,17 +387,17 @@ export const POST =
                   user
                 );
 
-              insertedUser = {
+              ctx._insertedUser = {
                 _id: result.insertedId,
                 name: user.name,
                 rollNo: user.rollNo,
                 email: user.email,
               };
             },
-            compensate: async () => {
-              if (insertedUser?._id) {
+            compensate: async (ctx) => {
+              if (ctx._insertedUser?._id) {
                 try {
-                  await users.deleteOne({ _id: insertedUser._id });
+                  await users.deleteOne({ _id: ctx._insertedUser._id });
                 } catch {}
               }
             },
@@ -416,7 +415,7 @@ export const POST =
 
       const resultPayload = {
         message: "User registered successfully",
-        user: insertedUser,
+        user: sagaResult.context._insertedUser,
       };
 
       // Mark as idempotent for retry dedup

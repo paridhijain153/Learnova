@@ -313,10 +313,10 @@ export default function Page() {
                               <IconComponent className="w-5 h-5" />
                             </div>
                             <div className="flex-1">
-                              <div className="text-2xl font-black text-black dark:text-white transition-colors duration-300 group-hover:text-purple-500 dark:group-hover:text-purple-400">
+                              <div className="text-2xl font-black text-slate-950 dark:text-white transition-colors duration-300 group-hover:text-purple-500 dark:group-hover:text-purple-400">
                                 <AnimatedCounter to={stat.number} suffix={stat.suffix} />
                               </div>
-                              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5 flex items-center gap-1 group-hover:text-black dark:group-hover:text-white transition-colors">
+                              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-0.5 flex items-center gap-1 group-hover:text-slate-950 dark:group-hover:text-white transition-colors">
                                 {stat.label}
                                 <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 text-purple-400" />
                               </p>
@@ -328,10 +328,10 @@ export default function Page() {
                               <IconComponent className="w-5 h-5" />
                             </div>
                             <div className="flex-1">
-                              <div className="text-2xl font-black text-black dark:text-white">
+                              <div className="text-2xl font-black text-slate-950 dark:text-white">
                                 <AnimatedCounter to={stat.number} suffix={stat.suffix} />
                               </div>
-                              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-0.5">
+                              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-0.5">
                                 {stat.label}
                               </p>
                             </div>
