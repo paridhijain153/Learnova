@@ -91,6 +91,12 @@ export default function Timetable({ role = "student" }) {
   const [modalMode, setModalMode] = useState("add"); // "add" | "edit"
   const [editingIndex, setEditingIndex] = useState(null);
   const [originalDay, setOriginalDay] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    day: "",
+    index: null,
+    subject: "",
+  });
   
   const [formData, setFormData] = useState({
     subject: "",
@@ -342,12 +348,23 @@ export default function Timetable({ role = "student" }) {
     const classToDelete = timetableData[day]?.[index];
     if (!classToDelete) return;
 
-    if (confirm(`Are you sure you want to delete ${classToDelete.subject}?`)) {
+    setDeleteConfirm({
+      isOpen: true,
+      day,
+      index,
+      subject: classToDelete.subject,
+    });
+  };
+
+  const confirmDeleteClass = () => {
+    const { day, index, subject } = deleteConfirm;
+    if (day && index !== null) {
       const updatedData = { ...timetableData };
       updatedData[day] = updatedData[day].filter((_, idx) => idx !== index);
       saveTimetable(updatedData);
-      toast.success(`Successfully deleted ${classToDelete.subject}!`);
+      toast.success(`Successfully deleted ${subject}!`);
     }
+    setDeleteConfirm({ isOpen: false, day: "", index: null, subject: "" });
   };
 
   // iCalendar Exporter
@@ -776,6 +793,56 @@ export default function Timetable({ role = "student" }) {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop filter overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteConfirm({ isOpen: false, day: "", index: null, subject: "" })}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            />
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-6 shadow-2xl backdrop-blur-2xl text-center z-10"
+            >
+              <div className="flex flex-col items-center mb-4">
+                <div className="rounded-full bg-red-500/10 p-3 mb-3 border border-red-500/20">
+                  <Trash2 className="w-6 h-6 text-red-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Delete Class Schedule</h3>
+                <p className="text-white/60 text-sm mt-2">
+                  Are you sure you want to delete <span className="font-semibold text-white">{deleteConfirm.subject}</span>? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex items-center justify-center space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm({ isOpen: false, day: "", index: null, subject: "" })}
+                  className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteClass}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:brightness-110 text-sm font-semibold text-white shadow-lg transition cursor-pointer"
+                >
+                  Confirm Delete
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
