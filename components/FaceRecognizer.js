@@ -244,6 +244,7 @@ export default function FaceRecognizer({ authUser }) {
     return () => {
       isMounted.current = false;
 
+      // Cancel all async operations
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -286,6 +287,7 @@ export default function FaceRecognizer({ authUser }) {
         labels.map(async (student) => {
           try {
             if (!isMounted.current || abortControllerRef.current?.signal.aborted) return null;
+            // Check if pre-calculated face descriptor exists in the database
             if (
               student.faceDescriptor &&
               Array.isArray(student.faceDescriptor) &&
@@ -387,7 +389,7 @@ export default function FaceRecognizer({ authUser }) {
       .withFaceLandmarks()
       .withFaceDescriptors();
 
-    if (!isMounted.current || abortControllerRef.current?.signal.aborted || !canvasRef.current) return;
+    if (!isMounted.current || abortControllerRef.current?.signal.aborted) return;
 
     const resizedDetections = faceapi.resizeResults(detections, displaySize);
     const ctx = canvas.getContext("2d");
@@ -397,7 +399,14 @@ export default function FaceRecognizer({ authUser }) {
     }
 
     if (resizedDetections.length > 0 && ctx) {
-      const face = resizedDetections[0];
+      // CRITICAL FIX: Sort detections by bounding box area to always select the person closest to the camera
+      const sortedDetections = resizedDetections.sort((a, b) => {
+        const areaA = a.detection.box.width * a.detection.box.height;
+        const areaB = b.detection.box.width * b.detection.box.height;
+        return areaB - areaA; // Descending order (largest face first)
+      });
+      
+      const face = sortedDetections[0];
       const bestMatch = faceMatcherRef.current.findBestMatch(face.descriptor);
       const label = bestMatch.label === "unknown" ? "Unknown" : bestMatch.label;
       const confidenceScore = Math.round((1 - bestMatch.distance) * 100);
@@ -490,6 +499,8 @@ export default function FaceRecognizer({ authUser }) {
     }
 
     if (isMounted.current && !finished && !abortControllerRef.current?.signal.aborted) {
+      // Loop execution only if not finished
+      // To prevent race conditions, check if we just transitioned to AUTHENTICATED
       setLivenessState((currentLiveness) => {
         if (currentLiveness !== "AUTHENTICATED" && isMounted.current) {
           animationFrameId.current = requestAnimationFrame(processVideo);

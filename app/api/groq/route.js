@@ -3,7 +3,6 @@ import { authenticateRequest, parseJSON, withErrorHandler } from "@/lib/error-ha
 import { validateGroqBody, callGroq } from "@/lib/ai/groq";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { detectInjection, sanitizeMessage } from "@/utils/promptGuard";
-import { GROQ_API_URL } from "@/lib/ai/groq";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -31,11 +30,9 @@ export const POST = withErrorHandler(async (request) => {
   const sanitizedMessage = sanitizeMessage(trimmedMessage);
 
   try {
-    console.log(`[nova-ai] Making request to Groq API: ${GROQ_API_URL}`);
-    const content = await callGroq(sanitizedMessage);
+    const content = await callGroq(sanitizedMessage, validation.messages, decodedToken.uid);
     return jsonSuccess({ message: content });
   } catch (error) {
-    console.error(`[nova-ai] Groq API error:`, error.message);
     if (error.name === "AbortError" || error.status === 504) {
       return jsonError("Gateway Timeout: Groq did not respond in time.", 504);
     }

@@ -1,31 +1,39 @@
-import { withErrorHandler, authenticateRequest } from "@/lib/error-handler";
+import { withErrorHandler } from "@/lib/error-handler";
 import { ForbiddenError } from "@/lib/errors";
-import { NextResponse } from "next/server";
 import { getFirestore } from "firebase-admin/firestore";
 import { initFirebaseAdmin } from "@/lib/firebase-admin";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { requireAuth } from "@/lib/rbac";
+import { fail, success } from "@/lib/api-response";
 
 export const GET = withErrorHandler(async (request) => {
   initFirebaseAdmin();
-  const decodedToken = await authenticateRequest(request);
+  const decodedToken = await requireAuth(request);
 
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
+  const requestedUserId = searchParams.get("userId");
   const month = searchParams.get("month");
 
-  if (!userId || !month) {
-    return NextResponse.json({ attendance: [] });
+  // Derive target user from token; only allow explicit userId for admin/teacher roles
+  let targetUserId;
+  if (requestedUserId && requestedUserId !== decodedToken.uid) {
+    const role = decodedToken.role;
+    if (role !== "admin" && role !== "teacher") {
+      throw new ForbiddenError("Forbidden: Cannot query attendance for another user");
+    }
+    targetUserId = requestedUserId;
+  } else {
+    targetUserId = decodedToken.uid;
   }
 
-  // 2. Ensure they are only querying attendance data for their own UID!
-  if (decodedToken.uid !== userId) {
-    throw new ForbiddenError("Forbidden: Cannot query attendance for another user");
+  if (!month) {
+    return success({ attendance: [] });
   }
 
   const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
-  const rateLimitResult = await checkRateLimit(`attendance_heatmap_${ip}_${userId}`);
+  const rateLimitResult = await checkRateLimit(`attendance_heatmap_${ip}_${targetUserId}`);
   if (!rateLimitResult.allowed) {
-    return Response.json({ error: "Too many requests. Please slow down." }, { status: 429 });
+    return fail(429, "TOO_MANY_REQUESTS", "Too many requests. Please slow down.");
   }
 
   const [year, monthNum] = month.split("-").map(Number);
@@ -37,26 +45,25 @@ export const GET = withErrorHandler(async (request) => {
   const firestoreDb = getFirestore();
   const snapshot = await firestoreDb
     .collection("attendance_records")
-    .where("userId", "==", userId)
+    .where("userId", "==", targetUserId)
+    .where("date", ">=", firstDayStr)
+    .where("date", "<=", lastDayStr)
     .get();
 
   const attendance = [];
   snapshot.forEach((doc) => {
     const data = doc.data();
-    const dateStr = data.date;
-    if (dateStr >= firstDayStr && dateStr <= lastDayStr) {
-      attendance.push({
-        date: dateStr,
-        status: data.status || "present",
-        subject: data.subject || "",
-        markedAt: data.timestamp ? data.timestamp.toDate().toISOString() : null,
-        _id: doc.id,
-      });
-    }
+    attendance.push({
+      date: data.date,
+      status: data.status || "present",
+      subject: data.subject || "",
+      markedAt: data.timestamp ? data.timestamp.toDate().toISOString() : null,
+      _id: doc.id,
+    });
   });
 
   // Sort by date ascending to match the original API contract
   attendance.sort((a, b) => a.date.localeCompare(b.date));
 
-  return NextResponse.json({ attendance });
+  return success({ attendance });
 });
