@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { connectDb } from "@/lib/mongodb";
+import { requireRole } from "@/lib/rbac";
 
 export async function POST(request) {
   try {
+    // Authenticate and authorize — only teachers and admins can modify curricula
+    await requireRole(request, ["teacher", "admin"]);
+
     const body = await request.json();
     const { courseId, modules } = body;
 
