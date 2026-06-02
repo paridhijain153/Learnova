@@ -8,7 +8,7 @@ import { recordAttendance } from "@/services/attendanceService";
 import { analytics } from "@/lib/firebaseConfig";
 import { logEvent } from "firebase/analytics";
 import { getAverageEAR } from "@/utils/livenessUtils";
-import { syncAttendanceQueue } from "@/lib/syncService";
+import { triggerOfflineSync } from "@/utils/offlineRequestHandler";
 
 const MIN_CONFIDENCE_TO_RECORD = 60;
 const EAR_THRESHOLD = 0.25;
@@ -74,7 +74,7 @@ export default function FaceRecognizer({ authUser }) {
     const handleOnline = () => {
       if (!isMounted.current) return;
       setIsOffline(false);
-      syncAttendanceQueue();
+      triggerOfflineSync();
     };
 
     const handleOffline = () => {

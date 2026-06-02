@@ -51,6 +51,9 @@ const clearAuthSessionCookie = async () => {
 
   await fetch("/api/auth/session", {
     method: "DELETE",
+    headers: {
+      ...(getClientCsrfToken() ? { "X-CSRF-Token": getClientCsrfToken() } : {}),
+    },
     credentials: "same-origin",
   }).catch((error) => {
     console.warn("[useAuth] Failed to clear auth session cookie:", error?.message);
@@ -211,6 +214,7 @@ export const useAuth = () => {
                 }
               } else {
                 setUserProfile(null);
+                await clearAuthSessionCookie();
                 deleteCookie("authToken");
                 deleteCookie("userRole");
               }
@@ -228,6 +232,7 @@ export const useAuth = () => {
           setUserProfile(null);
 
           // Clear auth cookies
+          await clearAuthSessionCookie();
           deleteCookie("authToken");
           deleteCookie("userRole");
 
@@ -241,6 +246,7 @@ export const useAuth = () => {
         setError(err.message);
         setUser(null);
         setUserProfile(null);
+        await clearAuthSessionCookie();
         deleteCookie("authToken");
         deleteCookie("userRole");
         setLoading(false);

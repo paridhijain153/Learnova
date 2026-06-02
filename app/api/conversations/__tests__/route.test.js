@@ -1,21 +1,26 @@
 import { requireAuth } from "@/lib/rbac";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { detectInjection } from "@/utils/promptGuard";
-import { UnauthorizedError } from "@/lib/errors";
+import { AppError } from "@/lib/errors";
+import { POST } from "@/app/api/conversations/route";
 
-vi.mock("groq-sdk", () => ({
-  Groq: vi.fn().mockImplementation(() => ({
-    chat: {
-      completions: {
-        create: vi.fn().mockResolvedValue({
-          [Symbol.asyncIterator]: async function* () {
-            yield { choices: [{ delta: { content: "Mocked token" } }] };
+vi.mock("groq-sdk", () => {
+  return {
+    Groq: vi.fn().mockImplementation(() => {
+      return {
+        chat: {
+          completions: {
+            create: vi.fn().mockResolvedValue({
+              [Symbol.asyncIterator]: async function* () {
+                yield { choices: [{ delta: { content: "Hello" } }] };
+              },
+            }),
           },
-        }),
-      },
-    },
-  })),
-}));
+        },
+      };
+    }),
+  };
+});
 
 vi.mock("@/lib/rbac", () => ({
   requireAuth: vi.fn(),
@@ -34,8 +39,6 @@ vi.mock("@/services/ai-agent/intentparser", () => ({
   parseUserIntent: vi.fn().mockResolvedValue(null),
 }));
 
-import { POST } from "@/app/api/conversations/route";
-
 const createMockRequest = (headers, body) => ({
   headers: {
     get: (name) => headers[name.toLowerCase()] || null,
@@ -53,7 +56,7 @@ describe("POST /api/conversations - Auth Security", () => {
   });
 
   test("rejects unauthenticated request with 401 when requireAuth throws", async () => {
-    requireAuth.mockRejectedValue(new UnauthorizedError("Unauthorized"));
+    requireAuth.mockRejectedValue(new AppError("Unauthorized", 401));
 
     const req = createMockRequest({}, { messages: [{ text: "Hello" }] });
     const response = await POST(req);
@@ -64,7 +67,7 @@ describe("POST /api/conversations - Auth Security", () => {
   });
 
   test("rejects request with invalid auth token", async () => {
-    requireAuth.mockRejectedValue(new UnauthorizedError("Unauthorized"));
+    requireAuth.mockRejectedValue(new AppError("Unauthorized", 401));
 
     const req = createMockRequest(
       { authorization: "Bearer invalid-token" },
