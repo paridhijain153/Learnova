@@ -1,4 +1,4 @@
-import { auth, db, isMockAuthMode, MOCK_USER } from "@/lib/firebaseConfig";
+import { auth, db } from "@/lib/firebaseConfig";
 import {
   GoogleAuthProvider,
   signInWithPopup,
