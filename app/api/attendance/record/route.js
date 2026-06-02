@@ -24,8 +24,9 @@ export const POST = withErrorHandler(async (request) => {
   const { userId, studentName, email, confidenceScore, date } = body;
   const normalizedDate = (date || getLocalDateKey()).toString();
 
-  // 2. Ensure they are only submitting attendance for their own UID!
-  if (decodedToken.uid !== userId) {
+  // 2. Ensure they are only submitting attendance for their own UID, OR they are a teacher/admin!
+  const isTeacherOrAdmin = decodedToken.role === "teacher" || decodedToken.role === "admin";
+  if (decodedToken.uid !== userId && !isTeacherOrAdmin) {
     return jsonError("Forbidden: Cannot submit attendance for another user", 403);
   }
 
@@ -49,13 +50,16 @@ export const POST = withErrorHandler(async (request) => {
   // Use a deterministic doc id and a transaction to prevent duplicates and match client duplicate checks.
   initFirebaseAdmin();
   const db = getFirestore();
-  const userProfile = await getUserProfile(decodedToken.uid);
-  const instituteId = userProfile?.instituteId || null;
 
-  // Use authoritative, verified data from Firebase JWT token (decodedToken) to completely prevent
-  // client-supplied parameter spoofing and impersonation attacks.
-  const resolvedName = userProfile?.fullName || decodedToken.name || decodedToken.displayName || decodedToken.email?.split("@")[0] || "Unknown User";
-  const resolvedEmail = userProfile?.email || decodedToken.email || "unknown@learnova.edu";
+  // Authoritatively fetch target student profile or use caller profile
+  const targetUid = userId || decodedToken.uid;
+  const userProfile = await getUserProfile(targetUid);
+  const callerProfile = decodedToken.uid !== targetUid ? await getUserProfile(decodedToken.uid) : userProfile;
+  const instituteId = userProfile?.instituteId || callerProfile?.instituteId || null;
+
+  // Use authoritative, verified data from profile to prevent client-supplied parameter spoofing
+  const resolvedName = userProfile?.fullName || (decodedToken.uid === targetUid ? (decodedToken.name || decodedToken.displayName) : null) || studentName || "Unknown User";
+  const resolvedEmail = userProfile?.email || (decodedToken.uid === targetUid ? decodedToken.email : null) || email || "unknown@learnova.edu";
 
   let alreadyRecorded = false;
   const sagaResult = await executeSaga({

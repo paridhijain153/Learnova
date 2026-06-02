@@ -213,6 +213,63 @@ describe('Attendance Record API Route — POST /api/attendance/record', () => {
     expect(data.alreadyRecorded).toBe(false);
   });
 
+  it('allows teacher or admin to submit attendance for another user', async () => {
+    authenticateRequest.mockResolvedValue({
+      uid: 'teacher-123',
+      role: 'teacher',
+      email: 'teacher@learnova.edu',
+      email_verified: true,
+    });
+    parseJSON.mockResolvedValue({
+      userId: 'student-456',
+      studentName: 'Jane Doe',
+      email: 'jane@learnova.edu',
+      confidenceScore: 90,
+      date: '2026-05-28',
+    });
+    getUserProfile.mockImplementation(async (uid) => {
+      if (uid === 'student-456') {
+        return {
+          fullName: 'Jane Doe',
+          email: 'jane@learnova.edu',
+          instituteId: 'inst-1',
+        };
+      }
+      return {
+        fullName: 'Teacher One',
+        email: 'teacher@learnova.edu',
+        instituteId: 'inst-1',
+      };
+    });
+    getFirestore.mockReturnValue(makeFirestoreDb({ docExists: false }));
+
+    const response = await POST(makeRequest());
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.alreadyRecorded).toBe(false);
+  });
+
+  it('rejects student attempting to submit attendance for another user', async () => {
+    authenticateRequest.mockResolvedValue({
+      uid: 'student-123',
+      role: 'student',
+      email: 'student@learnova.edu',
+      email_verified: true,
+    });
+    parseJSON.mockResolvedValue({
+      userId: 'student-456',
+      confidenceScore: 90,
+      date: '2026-05-28',
+    });
+
+    const response = await POST(makeRequest());
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data.error).toBe('Forbidden: Cannot submit attendance for another user');
+  });
+
   it('only exports POST — no DELETE handler', async () => {
     const routeModule = await import('@/app/api/attendance/record/route');
     expect(typeof routeModule.POST).toBe('function');
