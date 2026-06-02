@@ -8,6 +8,7 @@ export default function TimetablePage() {
   const [level, setLevel] = useState("Beginner");
   const [topics, setTopics] = useState("");
   const [generated, setGenerated] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const topicList = topics
     .split(",")
@@ -20,6 +21,7 @@ export default function TimetablePage() {
       return;
     }
     setGenerated(true);
+    setProgress(25);
   };
 
   return (
@@ -217,7 +219,34 @@ export default function TimetablePage() {
         </ul>
       </div>
     </div>
+<div className="mt-5 border rounded-xl p-4">
+  <h3 className="font-semibold mb-3">
+    🔍 Skill Gap Analysis
+  </h3>
 
+  <ul className="text-sm space-y-2">
+    {level === "Beginner" && (
+      <>
+        <li>• Build strong fundamentals in selected topics</li>
+        <li>• Focus on understanding core concepts before projects</li>
+      </>
+    )}
+
+    {level === "Intermediate" && (
+      <>
+        <li>• Strengthen problem-solving and practical implementation</li>
+        <li>• Increase project-based learning</li>
+      </>
+    )}
+
+    {level === "Advanced" && (
+      <>
+        <li>• Focus on optimization and advanced concepts</li>
+        <li>• Practice real-world challenges and mock assessments</li>
+      </>
+    )}
+  </ul>
+</div>
     {/* Summary */}
     <div className="mt-5 border rounded-xl p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
       <h3 className="font-semibold mb-2">

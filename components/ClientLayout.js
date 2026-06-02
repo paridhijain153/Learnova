@@ -70,7 +70,7 @@ export default function ClientLayout({ children }) {
   const { user, userProfile } = useAuth();
 
   useOfflineSync();
-  useSessionMonitor();
+  // useSessionMonitor();
 
   const handleSearch = useCallback(() => {
     dispatch({ type: "OPEN_SEARCH" });
