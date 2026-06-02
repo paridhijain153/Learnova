@@ -31,7 +31,7 @@ Learnova is a modern, AI-powered educational platform built to eliminate the ine
 ## ✨ Features
 
 ### 🔐 Role-Based Authentication
-- Separate dashboards for **Students**, **Teachers**, **Institutes**, and **Admins**
+- Separate dashboards for **Students**, **Teachers**, **Institutes**, **Parents**, and **Admins**
 - Firebase-powered sign-up/login with email verification and password reset
 - Secure protected routes with role-based redirects
 
@@ -44,6 +44,7 @@ Learnova is a modern, AI-powered educational platform built to eliminate the ine
 - **Student Dashboard** — view attendance records and academic progress
 - **Teacher Dashboard** — manage classes, take attendance, monitor students
 - **Institute Dashboard** — oversee departments and institution-wide metrics
+- **Parent Dashboard** — monitor linked children's daily/weekly/monthly attendance trends, grades breakdown, low attendance alerts, and announcements
 - **Admin Dashboard** — full system administration and user management
 
 ### 📋 Notice Board
@@ -69,6 +70,40 @@ Learnova is a modern, AI-powered educational platform built to eliminate the ine
 ### ⚙️ Profile & Settings
 - Universal profile management for all roles
 - Customisable settings per user type
+
+---
+
+## 👨‍👩‍👧 Parent Portal Feature
+
+Learnova features a comprehensive Parent Portal that allows parents to securely monitor their children's academic status, notifications, and attendance.
+
+### Key Capabilities
+1. **Parent-Student Linking**: Admins can securely link one or multiple student accounts to a single Parent account via the Admin Dashboard.
+2. **Attendance Tracking**: Dynamic attendance analytics displaying daily, weekly, and monthly trends using high-fidelity Recharts visualisations.
+3. **Academic Performance**: Subject-wise grade breakdown, scores, and GPAs with automatic grade notifications.
+4. **Self-Healing Low Attendance Alerts**: Automated background check triggers when student attendance drops below 75%, generating notifications for parents.
+5. **Notice Board Integration**: Parents can view notices and announcements posted by the student's institute.
+
+### Data Schemas
+
+#### `parent_student_links` (Firestore & MongoDB)
+Maps the relationship between a parent and their linked child/children:
+- `_id / documentId`: `${parentId}_${studentId}`
+- `parentId`: Firebase UID of the parent user
+- `studentId`: Firebase UID of the student user
+- `createdAt`: ISO Timestamp
+
+#### `grades` (Firestore & MongoDB)
+Stores subject-wise student grades:
+- `_id / documentId`: Unique ID
+- `studentId`: Firebase UID of the student user
+- `subject`: Name of the subject (e.g. "Computer Science")
+- `grade`: Letter grade (e.g. "A+")
+- `score`: Numeric score (e.g. 98)
+- `maxScore`: Maximum possible score (e.g. 100)
+- `term`: Academic term (e.g. "Midterm")
+- `date`: Grading date (e.g. "2026-06-01")
+- `createdAt`: ISO Timestamp
 
 ---
 
@@ -105,6 +140,7 @@ learnova/
 │   ├── student/dashboard/        # Student dashboard
 │   ├── teacher/dashboard/        # Teacher dashboard
 │   ├── institute/dashboard/      # Institute dashboard
+│   ├── parent/dashboard/         # Parent dashboard
 │   ├── admin/dashboard/          # Admin dashboard
 │   ├── attendance/               # Attendance management
 │   ├── activity/                 # Activity centre
@@ -120,6 +156,7 @@ learnova/
 │   ├── StudentDashboard.js       # Student dashboard component
 │   ├── TeacherDashboardComponent.js # Teacher dashboard component
 │   ├── InstituteDashboard.js     # Institute dashboard
+│   ├── ParentDashboard.js        # Parent dashboard component
 │   ├── AdminDashboard.js         # Admin dashboard
 │   ├── ChatBot.js                # AI chatbot
 │   ├── noticeBoard.js            # Notice board component
@@ -371,7 +408,7 @@ Found a security vulnerability? Please report it responsibly to **security@learn
 | :---: | :---: | :---: | :---: | :---: |
 | <a href="https://github.com/nivedha2025cse-gif"><img src="https://github.com/nivedha2025cse-gif.png?size=60" width="52" height="52" alt="nivedha2025cse-gif"/></a><br>@nivedha2025cse-gif | <a href="https://github.com/mrdeyroy"><img src="https://github.com/mrdeyroy.png?size=60" width="52" height="52" alt="mrdeyroy"/></a><br>@mrdeyroy | <a href="https://github.com/Hrithik-ui753"><img src="https://github.com/Hrithik-ui753.png?size=60" width="52" height="52" alt="Hrithik-ui753"/></a><br>@Hrithik-ui753 | <a href="https://github.com/Siddh2024"><img src="https://github.com/Siddh2024.png?size=60" width="52" height="52" alt="Siddh2024"/></a><br>@Siddh2024 | <a href="https://github.com/pranav-cholleti"><img src="https://github.com/pranav-cholleti.png?size=60" width="52" height="52" alt="pranav-cholleti"/></a><br>@pranav-cholleti |
 | <a href="https://github.com/Pratyush-Panda-2006"><img src="https://github.com/Pratyush-Panda-2006.png?size=60" width="52" height="52" alt="Pratyush-Panda-2006"/></a><br>@Pratyush-Panda-2006 | <a href="https://github.com/sricharan-213"><img src="https://github.com/sricharan-213.png?size=60" width="52" height="52" alt="sricharan-213"/></a><br>@sricharan-213 | <a href="https://github.com/Vaishnav-Hub9"><img src="https://github.com/Vaishnav-Hub9.png?size=60" width="52" height="52" alt="Vaishnav-Hub9"/></a><br>@Vaishnav-Hub9 | <a href="https://github.com/sanrishi"><img src="https://github.com/sanrishi.png?size=60" width="52" height="52" alt="sanrishi"/></a><br>@sanrishi | <a href="https://github.com/Sandeep6135"><img src="https://github.com/Sandeep6135.png?size=60" width="52" height="52" alt="Sandeep6135"/></a><br>@Sandeep6135 |
-| <a href="https://github.com/leno23"><img src="https://github.com/leno23.png?size=60" width="52" height="52" alt="leno23"/></a><br>@leno23 | <a href="https://github.com/Srushti-Kamble14"><img src="https://github.com/Srushti-Kamble14.png?size=60" width="52" height="52" alt="Srushti-Kamble14"/></a><br>@Srushti-Kamble14 | <a href="https://github.com/DhruvalBhinsara1"><img src="https://github.com/DhruvalBhinsara1.png?size=60" width="52" height="52" alt="DhruvalBhinsara1"/></a><br>@DhruvalBhinsara1 | <a href="https://github.com/HarshaNaidu11"><img src="https://github.com/HarshaNaidu11.png?size=60" width="52" height="52" alt="HarshaNaidu11"/></a><br>@HarshaNaidu11 | <a href="https://github.com/akashgoudsidduluri"><img src="https://github.com/akashgoudsidduluri.png?size=60" width="52" height="52" alt="akashgoudsidduluri"/></a><br>@akashgoudsidduluri |
+| <a href="https://github.com/leno23"><img src="https://github.com/leno23.png?size=60" width="52" height="52" alt="leno23"/></a><br>@leno23 | <a href="https://github.com/Srushti-Kamble14"><img src="https://github.com/Srushti-Kamble14.png?size=60" width="52" height="52" alt="Srushti-Kamble14"/></a><br>@Srushti-Kamble14 | <a href="https://github.com/DhruvalBhinsara1"><img src="https://github.com/DhruvalBhinsara1.png?size=60" width="52" height="52" alt="DhruvalBhinsara1"/></a><br>@DhruvalBhinsara1 | <a href="https://github.com/akashgoudsidduluri"><img src="https://github.com/akashgoudsidduluri.png?size=60" width="52" height="52" alt="akashgoudsidduluri"/></a><br>@akashgoudsidduluri | <a href="https://github.com/HarshaNaidu11"><img src="https://github.com/HarshaNaidu11.png?size=60" width="52" height="52" alt="HarshaNaidu11"/></a><br>@HarshaNaidu11 |
 | <a href="https://github.com/KRUSHAL2956"><img src="https://github.com/KRUSHAL2956.png?size=60" width="52" height="52" alt="KRUSHAL2956"/></a><br>@KRUSHAL2956 | <a href="https://github.com/basantnema31"><img src="https://github.com/basantnema31.png?size=60" width="52" height="52" alt="basantnema31"/></a><br>@basantnema31 | <a href="https://github.com/pragya0129"><img src="https://github.com/pragya0129.png?size=60" width="52" height="52" alt="pragya0129"/></a><br>@pragya0129 | <a href="https://github.com/ionfwsrijan"><img src="https://github.com/ionfwsrijan.png?size=60" width="52" height="52" alt="ionfwsrijan"/></a><br>@ionfwsrijan | <a href="https://github.com/omnipotentchaos"><img src="https://github.com/omnipotentchaos.png?size=60" width="52" height="52" alt="omnipotentchaos"/></a><br>@omnipotentchaos |
 | <a href="https://github.com/codedbydollys10"><img src="https://github.com/codedbydollys10.png?size=60" width="52" height="52" alt="codedbydollys10"/></a><br>@codedbydollys10 | <a href="https://github.com/Divyanshu227"><img src="https://github.com/Divyanshu227.png?size=60" width="52" height="52" alt="Divyanshu227"/></a><br>@Divyanshu227 | <a href="https://github.com/AMAN194701"><img src="https://github.com/AMAN194701.png?size=60" width="52" height="52" alt="AMAN194701"/></a><br>@AMAN194701 | <a href="https://github.com/paripnj"><img src="https://github.com/paripnj.png?size=60" width="52" height="52" alt="paripnj"/></a><br>@paripnj | <a href="https://github.com/harshbok69-bit"><img src="https://github.com/harshbok69-bit.png?size=60" width="52" height="52" alt="harshbok69-bit"/></a><br>@harshbok69-bit |
 | <a href="https://github.com/SuhridXSingh"><img src="https://github.com/SuhridXSingh.png?size=60" width="52" height="52" alt="SuhridXSingh"/></a><br>@SuhridXSingh | <a href="https://github.com/skypank-coder"><img src="https://github.com/skypank-coder.png?size=60" width="52" height="52" alt="skypank-coder"/></a><br>@skypank-coder | <a href="https://github.com/thevaibhavtyagi"><img src="https://github.com/thevaibhavtyagi.png?size=60" width="52" height="52" alt="thevaibhavtyagi"/></a><br>@thevaibhavtyagi | <a href="https://github.com/Pratikshya32"><img src="https://github.com/Pratikshya32.png?size=60" width="52" height="52" alt="Pratikshya32"/></a><br>@Pratikshya32 | <a href="https://github.com/KGFCH2"><img src="https://github.com/KGFCH2.png?size=60" width="52" height="52" alt="KGFCH2"/></a><br>@KGFCH2 |

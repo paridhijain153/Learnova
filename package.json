@@ -103,6 +103,7 @@
     "serialize-javascript": "7.0.5",
     "postcss": "8.5.11",
     "uuid": "11.1.1",
-    "workbox-build": "7.4.1"
+    "workbox-build": "7.4.1",
+    "@swc/helpers": "0.5.23"
   }
 }
