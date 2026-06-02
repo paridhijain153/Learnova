@@ -3,7 +3,8 @@ import { GET, POST } from "@/app/api/images/route";
 import { requireAuth } from "@/lib/rbac";
 import { connectDb } from "@/lib/mongodb";
 import { getUserProfile } from "@/lib/firebase-admin";
-import { NotFoundError } from "@/lib/errors";
+import { ForbiddenError, NotFoundError } from "@/lib/errors";
+import { checkRateLimit } from "@/lib/rateLimit";
 import {
   extractImageFileFromFormData,
   fetchAndValidateImage,
@@ -41,6 +42,10 @@ vi.mock("@/lib/rbac", () => ({
   requireAuth: vi.fn(),
 }));
 
+vi.mock("@/lib/rateLimit", () => ({
+  checkRateLimit: vi.fn(),
+}));
+
 vi.mock("@/lib/mongodb", () => ({
   connectDb: vi.fn(),
 }));
@@ -71,6 +76,8 @@ describe("/api/images route orchestration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     validateFaceDescriptor.mockReturnValue(null);
+    checkRateLimit.mockResolvedValue({ allowed: true, remaining: 10 });
+    getUserProfile.mockResolvedValue(null);
   });
 
   test("GET returns own image when requested id matches authenticated user", async () => {
@@ -81,6 +88,7 @@ describe("/api/images route orchestration", () => {
     connectDb.mockResolvedValue({
       collection: vi.fn().mockReturnValue({
         findOne: vi.fn().mockResolvedValue({ _id: userId }),
+        createIndex: vi.fn(),
       }),
     });
     getUserImageFromDb.mockResolvedValue("https://public.blob.vercel-storage.com/a.jpg");
@@ -100,6 +108,9 @@ describe("/api/images route orchestration", () => {
     expect(requireAuth).toHaveBeenCalledWith(req);
     expect(getUserImageFromDb).toHaveBeenCalledWith({
       id: userId.toString(),
+      callerUid: uid,
+      callerRole: "student",
+      callerInstituteId: undefined,
     });
     expect(fetchAndValidateImage).toHaveBeenCalledWith(
       "https://public.blob.vercel-storage.com/a.jpg"
@@ -108,16 +119,17 @@ describe("/api/images route orchestration", () => {
 
   test("GET rejects when user requests another user's image and is not admin or teacher", async () => {
     const uid = "firebase-uid-1";
-    const ownId = new ObjectId();
     const otherId = new ObjectId();
 
     requireAuth.mockResolvedValue({ uid });
     connectDb.mockResolvedValue({
       collection: vi.fn().mockReturnValue({
         findOne: vi.fn().mockResolvedValue({ _id: ownId }),
+        createIndex: vi.fn(),
       }),
     });
     getUserProfile.mockResolvedValue({ role: "student" });
+    getUserImageFromDb.mockRejectedValue(new ForbiddenError("You do not have permission to view this image"));
 
     const req = {
       url: `https://learnova.test/api/images?id=${otherId.toString()}`,
@@ -128,18 +140,18 @@ describe("/api/images route orchestration", () => {
     const body = await response.json();
 
     expect(response.status).toBe(403);
-    expect(body.error).toBe("You can only view your own profile image");
+    expect(body.error).toBe("You do not have permission to view this image");
   });
 
   test("GET allows admin to view any user's image", async () => {
     const uid = "admin-uid-1";
-    const ownId = new ObjectId();
     const otherId = new ObjectId();
 
     requireAuth.mockResolvedValue({ uid });
     connectDb.mockResolvedValue({
       collection: vi.fn().mockReturnValue({
         findOne: vi.fn().mockResolvedValue({ _id: ownId }),
+        createIndex: vi.fn(),
       }),
     });
     getUserProfile.mockResolvedValue({ role: "admin" });
@@ -159,14 +171,15 @@ describe("/api/images route orchestration", () => {
     expect(response.status).toBe(200);
     expect(getUserImageFromDb).toHaveBeenCalledWith({
       id: otherId.toString(),
+      callerUid: uid,
+      callerRole: "admin",
+      callerInstituteId: undefined,
     });
   });
 
   test("GET allows teacher to view any user's image", async () => {
     const uid = "teacher-uid-1";
-    const ownId = new ObjectId();
     const otherId = new ObjectId();
-    const instituteId = new ObjectId();
 
     requireAuth.mockResolvedValue({ uid });
     
@@ -177,6 +190,7 @@ describe("/api/images route orchestration", () => {
     connectDb.mockResolvedValue({
       collection: vi.fn().mockReturnValue({
         findOne: findOneMock,
+        createIndex: vi.fn(),
       }),
     });
     getUserProfile.mockResolvedValue({ role: "teacher" });
@@ -203,6 +217,7 @@ describe("/api/images route orchestration", () => {
     connectDb.mockResolvedValue({
       collection: vi.fn().mockReturnValue({
         findOne: vi.fn().mockResolvedValue(null),
+        createIndex: vi.fn(),
       }),
     });
 

@@ -87,9 +87,11 @@ describe("attendance heatmap API route", () => {
   });
 
   test("allows admin to query any user", async () => {
-    requireRole.mockResolvedValue({
-      payload: { uid: "admin-1", role: "admin" },
-      profile: { role: "admin" },
+    requireAuth.mockResolvedValue({ uid: "admin-1", role: "admin" });
+    getUserProfile.mockImplementation((uid) => {
+      if (uid === "admin-1") return Promise.resolve({ instituteId: "inst-1" });
+      if (uid === "student-42") return Promise.resolve({ instituteId: "inst-1" });
+      return Promise.resolve(null);
     });
     const { mockGet } = createMockFirestore();
     mockGet.mockResolvedValue(createMockDocs([]));
@@ -99,14 +101,12 @@ describe("attendance heatmap API route", () => {
     expect(res.status).toBe(200);
   });
 
-  test("allows teacher to query student they teach (overlapping subject)", async () => {
-    requireRole.mockResolvedValue({
-      payload: { uid: "teacher-1", role: "teacher" },
-      profile: { role: "teacher", subjects: ["Math"] },
-    });
-    getUserProfile.mockResolvedValue({
-      role: "student",
-      subjects: ["Math"],
+  test("allows teacher to query any user", async () => {
+    requireAuth.mockResolvedValue({ uid: "teacher-1", role: "teacher" });
+    getUserProfile.mockImplementation((uid) => {
+      if (uid === "teacher-1") return Promise.resolve({ instituteId: "inst-1" });
+      if (uid === "student-42") return Promise.resolve({ instituteId: "inst-1" });
+      return Promise.resolve(null);
     });
     const { mockGet } = createMockFirestore();
     mockGet.mockResolvedValue(createMockDocs([]));
