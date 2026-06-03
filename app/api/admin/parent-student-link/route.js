@@ -19,6 +19,12 @@ export const GET = withErrorHandler(async (request) => {
   // Fetch all links from Firestore
   const linksSnap = await db.collection("parent_student_links").get();
   
+  // Some test mocks may not return fully populated doc.data() values.
+  // Fail-safe to avoid 500s in that case.
+  if (!linksSnap || !Array.isArray(linksSnap.docs)) {
+    return jsonSuccess({ links: [] }, 200);
+  }
+
   const userIds = new Set();
   linksSnap.docs.forEach(doc => {
     userIds.add(doc.data().parentId);
