@@ -265,3 +265,32 @@
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
+
+/* A11Y: Comprehensive Keyboard Navigation Focus */
+:focus-visible {
+  outline: 2px solid var(--primary-color, #2563eb) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2) !important;
+  transition: outline 0.1s ease-in-out;
+}
+
+button:focus-visible, 
+a:focus-visible, 
+input:focus-visible, 
+textarea:focus-visible, 
+select:focus-visible {
+  border-radius: 4px; /* Ensure outline wraps nicely */
+}
+
+/* Screen reader only utility class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
