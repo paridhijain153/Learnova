@@ -119,6 +119,7 @@ const nextConfig = {
       ...(config.resolve.fallback || {}),
       fs: false,
       encoding: false,
+      canvas: false,
     };
     return config;
   },
