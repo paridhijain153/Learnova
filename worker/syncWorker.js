@@ -2,14 +2,16 @@
  * Processes queued offline actions with exponential backoff and Last-Write-Wins logic
  * @param {Array} queue - Array of offline mutations
  * @param {Function} apiSyncFunction - The network dispatch handler
+ * @param {Object} options - Configurations for retries (useful for testing)
  */
-export async function processOfflineQueueWithRetry(queue, apiSyncFunction) {
+export async function processOfflineQueueWithRetry(queue, apiSyncFunction, options = {}) {
   const processedResults = [];
+  const maxAttempts = options.maxAttempts || 3;
+  // Allows tests to pass 0 to avoid waiting seconds in the CI environment
+  const baseDelay = typeof options.baseDelay !== 'undefined' ? options.baseDelay : 1000;
 
   for (const action of queue) {
     let attempts = 0;
-    const maxAttempts = 3;
-    let baseDelay = 1000; // 1 second base delay
     let success = false;
 
     // 1. Conflict Resolution Layer: Last-Write-Wins (LWW) check
@@ -32,7 +34,11 @@ export async function processOfflineQueueWithRetry(queue, apiSyncFunction) {
         }
         // Calculate exponential delay: 1s -> 2s -> 4s...
         const delay = baseDelay * Math.pow(2, attempts - 1);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        
+        // Skip waiting entirely if delay is set to 0
+        if (delay > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
       }
     }
   }
