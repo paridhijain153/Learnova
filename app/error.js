@@ -7,7 +7,9 @@ export default function Error({ error, reset }) {
   const t = useTranslations('common');
 
   useEffect(() => {
-    console.error('Runtime error:', error?.message ?? 'Unknown error');
+    console.error('Runtime error:', error?.message ?? 'Unknown error', {
+      digest: error?.digest,
+    });
   }, [error]);
 
   return (
@@ -22,10 +24,16 @@ export default function Error({ error, reset }) {
 
       <button
         onClick={() => reset()}
-        className="px-5 py-2 rounded bg-black text-white hover:opacity-80"
+        className="px-5 py-2 rounded bg-black text-white hover:opacity-80 mb-6"
       >
         Try Again
       </button>
+
+      {error?.digest && (
+        <p className="text-xs text-gray-400 font-mono select-all">
+          Error ID: {error.digest}
+        </p>
+      )}
     </div>
   );
 }

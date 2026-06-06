@@ -62,7 +62,6 @@ export function useKeyboardShortcuts({
         onEscape?.();
       }
     },
-    //  All 7 callbacks listed — handleKeyDown always has fresh references
     [onSearch, onHelp, onEscape, onTheme, onHome, onLeaderboard, onNotifications]
   );
 
