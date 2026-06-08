@@ -547,6 +547,57 @@ const NoticeCard = ({
         ))}
       </motion.div>
 
+      {/* Attachments — feat #2184: rich media support */}
+      {notice.attachments?.length > 0 && (
+        <div className="mt-5 space-y-3">
+          <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">
+            Attachments
+          </p>
+          {notice.attachments.map((att, i) => (
+            <div key={i}>
+              {att.type === "link" ? (
+                
+                  href={att.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-sky-400 hover:underline break-all"
+                >
+                  🔗 {att.name}
+                </a>
+              ) : att.type?.startsWith("image/") ? (
+                
+                  href={att.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img
+                    src={att.url}
+                    alt={att.name}
+                    className="rounded-xl max-h-48 w-full object-cover border border-slate-700 hover:opacity-90 transition"
+                  />
+                </a>
+              ) : att.type === "application/pdf" ? (
+                <div className="rounded-xl overflow-hidden border border-slate-700">
+                  <iframe
+                    src={att.url}
+                    title={att.name}
+                    className="w-full h-48"
+                  />
+                  
+                    href={att.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-slate-800 px-3 py-2 text-xs text-slate-300 hover:bg-slate-700 transition"
+                  >
+                    📄 {att.name} — Open PDF
+                  </a>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
